@@ -1,119 +1,98 @@
-#include <vector>
-#include <string>
-#include <fstream>
+#include "CashFlowAnalysis.h"
+#include <cmath>
 #include <iostream>
+#include <fstream>
 
-class CashFlowAnalysis {
-private:
-    std::vector<double> metrics;
-    double totalRevenue;
-    double totalOpex;
-    double avgAnnualCashFlow;
-    int projectLife;
+CashFlowAnalysis::CashFlowAnalysis() 
+    : totalRevenue(0), totalOpex(0), avgAnnualCashFlow(0), projectLife(0) {
+    metrics.resize(4);
+}
 
-public:
-    CashFlowAnalysis() : totalRevenue(0), totalOpex(0), avgAnnualCashFlow(0), projectLife(0) {
-        metrics.resize(4); // Assuming metrics stores projectLife, totalRevenue, totalOpex, avgAnnualCashFlow
+void CashFlowAnalysis::generateCashFlow(double discountRate) {
+    if (yearlyCashFlow.empty()) return;
+    
+    double cumulativeNPV = -capex;
+    for (size_t year = 0; year < yearlyCashFlow.size(); ++year) {
+        double discountFactor = 1.0 / std::pow(1.0 + discountRate, (double)year);
+        double discountedCashFlow = yearlyCashFlow[year] * discountFactor;
+        cumulativeNPV += discountedCashFlow;
     }
+    
+    calculateNPV();
+    calculateIRR();
+    calculatePaybackPeriod();
+    updateMetrics();
+}
 
-    void generateCashFlow(const std::vector<Phase>& phases, const EconomicParameters& params, double discountRate, double capex = 0) {
-        double cumulativeNPV = -capex;
-        std::vector<double> yearlyCashFlow;
-        int year = 0;
-
-        for (const auto& phase : phases) {
-            double oreProduced = phase.oreTonnage;
-            double metalProduced = oreProduced * phase.grade * phase.recovery / 100;
-            double revenue = metalProduced * params.price;
-            double miningCost = (oreProduced + phase.waste) * params.costPerTonne;
-            double processingCost = oreProduced * params.processCost;
-            double operatingCashFlow = revenue - (miningCost + processingCost);
-
-            double discountFactor = 1 / std::pow(1 + discountRate, year);
-            double discountedCashFlow = operatingCashFlow * discountFactor;
-            cumulativeNPV += discountedCashFlow;
-            yearlyCashFlow.push_back(operatingCashFlow);
-
-            year++;
-        }
-
-        calculateNPV(yearlyCashFlow);
-        calculateIRR(yearlyCashFlow);
-        calculatePaybackPeriod(yearlyCashFlow);
-        updateMetrics();
+double CashFlowAnalysis::calculateNPV() {
+    double npv = -capex;
+    for (size_t i = 0; i < yearlyCashFlow.size(); ++i) {
+        npv += yearlyCashFlow[i];
     }
+    return npv;
+}
 
-    double calculateNPV(const std::vector<double>& cashFlows) {
+double CashFlowAnalysis::calculateIRR() {
+    double lowerBound = -0.99;
+    double upperBound = 1.0;
+    
+    for (int iter = 0; iter < 100; ++iter) {
+        double mid = (lowerBound + upperBound) / 2.0;
         double npv = 0.0;
-        for (size_t i = 0; i < cashFlows.size(); ++i) {
-            npv += cashFlows[i];
+        
+        for (size_t i = 0; i < yearlyCashFlow.size(); ++i) {
+            npv += yearlyCashFlow[i] / std::pow(1.0 + mid, (double)i);
         }
-        return npv;
+        
+        if (npv > 0) lowerBound = mid;
+        else upperBound = mid;
     }
+    
+    return (lowerBound + upperBound) / 2.0;
+}
 
-    double calculateIRR(const std::vector<double>& cashFlows) {
-        double lowerBound = -1.0; // Start with -100%
-        double upperBound = 1.0; // Start with 100%
-        double mid = 0.0;
-
-        while (upperBound - lowerBound > 0.0001) {
-            mid = (lowerBound + upperBound) / 2;
-            double npv = calculateNPV(cashFlows, mid);
-
-            if (npv > 0) {
-                lowerBound = mid;
-            } else {
-                upperBound = mid;
-            }
-        }
-        return mid;
-    }
-
-    void calculatePaybackPeriod(const std::vector<double>& cashFlows) {
-        double cumulativeCashFlow = 0.0;
-        for (size_t year = 0; year < cashFlows.size(); ++year) {
-            cumulativeCashFlow += cashFlows[year];
-            if (cumulativeCashFlow >= 0) {
-                std::cout << "Payback Period: " << year << " years" << std::endl;
-                break;
-            }
+void CashFlowAnalysis::calculatePaybackPeriod() {
+    double cumulativeCashFlow = -capex;
+    for (size_t year = 0; year < yearlyCashFlow.size(); ++year) {
+        cumulativeCashFlow += yearlyCashFlow[year];
+        if (cumulativeCashFlow >= 0) {
+            std::cout << "Payback Period: " << year << " years\n";
+            return;
         }
     }
+}
 
-    void updateMetrics() {
-        projectLife = metrics[0];
-        totalRevenue = metrics[1];
-        totalOpex = metrics[2];
-        avgAnnualCashFlow = metrics[3];
-        // Calculate averages and totals as needed
+void CashFlowAnalysis::updateMetrics() {
+    projectLife = (int)yearlyCashFlow.size();
+    totalRevenue = 0;
+    totalOpex = 0;
+    for (double cf : yearlyCashFlow) {
+        if (cf > 0) totalRevenue += cf;
+        else totalOpex += -cf;
     }
+    avgAnnualCashFlow = totalRevenue / projectLife;
+}
 
-    void exportCashFlowCSV(const std::vector<double>& yearlyCashFlow) {
-        std::ofstream file("CashFlow.csv");
-        for (const auto& cashFlow : yearlyCashFlow) {
-            file << cashFlow << "\n";
-        }
-        file.close();
+void CashFlowAnalysis::addCashFlow(double amount) {
+    yearlyCashFlow.push_back(amount);
+}
+
+void CashFlowAnalysis::exportCashFlowCSV(const std::string& filename) {
+    std::ofstream file(filename);
+    for (const auto& cf : yearlyCashFlow) {
+        file << cf << "\n";
     }
+    file.close();
+}
 
-    void exportSensitivityAnalysis(double basePrice, double baseCost) {
-        for (double variation : {-0.2, -0.1, 0, 0.1, 0.2}) {
-            double price = basePrice * (1 + variation);
-            double cost = baseCost * (1 + variation);
-            // Calculate and store NPV for each variation
-        }
+void CashFlowAnalysis::exportSensitivityAnalysis(const std::string& filename, double basePrice, double baseCost) {
+    std::ofstream file(filename);
+    file << "Variation,Price,Cost,NPV\n";
+    for (double variation : {-0.2, -0.1, 0, 0.1, 0.2}) {
+        double price = basePrice * (1.0 + variation);
+        double cost = baseCost * (1.0 + variation);
+        double npv = calculateNPV();
+        file << variation << "," << price << "," << cost << "," << npv << "\n";
     }
-};
-
-struct Phase {
-    double oreTonnage;
-    double waste;
-    double grade;
-    double recovery;
-};
-
-struct EconomicParameters {
-    double price;
-    double costPerTonne;
-    double processCost;
-};
+    file.close();
+}
