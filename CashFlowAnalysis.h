@@ -1,1 +1,26 @@
-#ifndef CASH_FLOW_ANALYSIS_H\n#define CASH_FLOW_ANALYSIS_H\n\n#include <string>\n#include <vector>\n\nclass CashFlowAnalysis {\npublic:\n    struct CashFlowYear {\n        int year;\n        double cashFlow;\n    };\n\n    struct ProjectMetrics {\n        std::string projectName;\n        double totalCost;\n        double roi; // Return on Investment\n    };\n\n    void addCashFlowYear(const CashFlowYear& yearData);\n    std::vector<CashFlowYear> getCashFlowYears() const;\n    void setProjectMetrics(const ProjectMetrics& metrics);\n    ProjectMetrics getProjectMetrics() const;\n\private:\n    std::vector<CashFlowYear> cashFlowYears;\n    ProjectMetrics metrics;\n};\n\n#endif // CASH_FLOW_ANALYSIS_H
+#pragma once
+#include <vector>
+#include <string>
+
+class CashFlowAnalysis {
+private:
+    std::vector<double> metrics;
+    std::vector<double> yearlyCashFlow;
+    double totalRevenue;
+    double totalOpex;
+    double avgAnnualCashFlow;
+    double capex;
+    int projectLife;
+
+public:
+    CashFlowAnalysis();
+    
+    void generateCashFlow(double discountRate);
+    double calculateNPV();
+    double calculateIRR();
+    void calculatePaybackPeriod();
+    void updateMetrics();
+    void addCashFlow(double amount);
+    void exportCashFlowCSV(const std::string& filename);
+    void exportSensitivityAnalysis(const std::string& filename, double basePrice, double baseCost);
+};
