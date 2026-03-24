@@ -1,0 +1,20 @@
+# name: CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up ${{ matrix.os }}
+      run: |
+        if [ ${{ matrix.os }} == 'windows-latest' ]; then
+          choco install mingw;
+        fi
+    - name: Build
+      run: |
+        g++ -o myproject main.cpp BlockModel.cpp -I .
