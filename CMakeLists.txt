@@ -126,6 +126,12 @@ elseif(UNIX)
     target_link_libraries(OpenPit3D PRIVATE GL)
 endif()
 
+add_executable(OpenPit3D 
+    src/PitScheduler.cpp
+    src/CashFlowAnalysis.cpp
+    # ... existing files
+)
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  Build sonrası bilgi
 # ─────────────────────────────────────────────────────────────────────────────
