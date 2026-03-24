@@ -15,6 +15,7 @@ endif()
 include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
 
+# ── GLFW ──────────────────────────────────────────────────────────
 set(GLFW_BUILD_DOCS     OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -27,6 +28,7 @@ FetchContent_Declare(glfw
 )
 FetchContent_MakeAvailable(glfw)
 
+# ── GLM ────────────────────────────────────────────────────────────
 FetchContent_Declare(glm
     GIT_REPOSITORY https://github.com/g-truc/glm.git
     GIT_TAG        0.9.9.8
@@ -34,6 +36,7 @@ FetchContent_Declare(glm
 )
 FetchContent_MakeAvailable(glm)
 
+# ── GLEW ───────────────────────────────────────────────────────────
 set(glew-cmake_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 set(glew-cmake_BUILD_STATIC ON  CACHE BOOL "" FORCE)
 set(ONLY_LIBS               ON  CACHE BOOL "" FORCE)
@@ -44,6 +47,7 @@ FetchContent_Declare(glew
 )
 FetchContent_MakeAvailable(glew)
 
+# ── Dear ImGui ─────────────────────────────────────────────────────
 FetchContent_Declare(imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
     GIT_TAG        v1.90.4
@@ -70,24 +74,27 @@ else()
     target_compile_options(imgui_lib PRIVATE -w)
 endif()
 
+# ── OpenMP ─────────────────────────────────────────────────────────
 find_package(OpenMP)
 
+# ── Main Executable ───────────────────────────────────────────────
+# FILES ARE IN ROOT, NOT IN src/
 add_executable(OpenPit3D
-    src/main.cpp
-    src/BlockModel.cpp
-    src/Camera.cpp
-    src/DrillholeDatabase.cpp
-    src/LGOptimizer.cpp
-    src/MeshModel.cpp
-    src/PitGenerator.cpp
-    src/Renderer.cpp
-    src/SceneController.cpp
-    src/Shader.cpp
-    src/UI.cpp
-    src/CashFlowAnalysis.cpp
+    main.cpp
+    BlockModel.cpp
+    Camera.cpp
+    DrillholeDatabase.cpp
+    LGOptimizer.cpp
+    MeshModel.cpp
+    PitGenerator.cpp
+    Renderer.cpp
+    SceneController.cpp
+    Shader.cpp
+    UI.cpp
+    CashFlowAnalysis.cpp
 )
 
-target_include_directories(OpenPit3D PRIVATE src)
+target_include_directories(OpenPit3D PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(OpenPit3D PRIVATE
     glfw
@@ -97,6 +104,7 @@ target_link_libraries(OpenPit3D PRIVATE
     $<$<BOOL:${OpenMP_CXX_FOUND}>:OpenMP::OpenMP_CXX>
 )
 
+# ── Platform-specific OpenGL ──────────────────────────────────────
 if(WIN32)
     target_link_libraries(OpenPit3D PRIVATE opengl32)
 elseif(APPLE)
