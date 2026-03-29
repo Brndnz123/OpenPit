@@ -1,76 +1,39 @@
-name: Build OpenPit3D
+name: TypeScript Build
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:
+    branches: [ "main" ]
 
 jobs:
-  build-windows:
-    name: Windows (MSVC x64)
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-
-      - name: CMake Configure
-        run: |
-          cmake -B build ^
-          -G "Visual Studio 17 2022" -A x64 ^
-          -DCMAKE_BUILD_TYPE=Release
-
-      - name: CMake Build
-        run: cmake --build build --config Release --parallel
-
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenPit3D-Windows-x64
-          path: build/Release/OpenPit3D.exe
-          if-no-files-found: error
-
-  build-linux:
-    name: Linux (GCC x64)
+  build:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        # Test against active LTS versions of Node.js
+        node-version: [18.x, 20.x]
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgl1-mesa-dev \
-            libglu1-mesa-dev \
-            libx11-dev \
-            libxrandr-dev \
-            libxinerama-dev \
-            libxcursor-dev \
-            libxi-dev \
-            libxxf86vm-dev \
-            libomp-dev
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm' # Speeds up builds by caching dependencies
 
-      - name: CMake Configure
-        run: |
-          cmake -B build \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_CXX_COMPILER=g++
+    - name: Install dependencies
+      # Using 'npm ci' is recommended for automated environments 
+      # as it strictly follows the package-lock.json
+      run: npm ci
 
-      - name: CMake Build
-        run: cmake --build build --parallel $(nproc)
+    - name: Build TypeScript
+      # Assumes you have a "build": "tsc" script in your package.json
+      run: npm run build
 
-      - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenPit3D-Linux-x64
-          path: build/OpenPit3D
-          if-no-files-found: error
+    - name: Run tests
+      # Optional: Runs if you have a "test" script defined
+      run: npm test --if-present
