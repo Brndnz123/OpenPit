@@ -1,4 +1,4 @@
-name: TypeScript Build
+name: C++ CMake Build
 
 on:
   push:
@@ -10,30 +10,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        # Test against active LTS versions of Node.js
-        node-version: [18.x, 20.x]
-
     steps:
+    # 1. Download the code into the runner
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm' # Speeds up builds by caching dependencies
+    # 2. Install required Linux display and graphics headers for GLFW/OpenGL
+    - name: Install Linux Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xorg-dev libwayland-dev libxkbcommon-dev wayland-protocols libgl1-mesa-dev libglu1-mesa-dev
 
-    - name: Install dependencies
-      # Using 'npm ci' is recommended for automated environments 
-      # as it strictly follows the package-lock.json
-      run: npm ci
+    # 3. Configure the project using the CMakeLists.txt
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++
 
-    - name: Build TypeScript
-      # Assumes you have a "build": "tsc" script in your package.json
-      run: npm run build
-
-    - name: Run tests
-      # Optional: Runs if you have a "test" script defined
-      run: npm test --if-present
+    # 4. Compile the code
+    - name: Build
+      run: cmake --build build --config Release --parallel
