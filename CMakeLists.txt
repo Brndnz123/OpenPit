@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 project(OpenPit3D VERSION 1.0 LANGUAGES CXX)
 
-# Require C++17 (needed for std::clamp, etc.)
+# Require C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -21,10 +21,10 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(glfw)
 
-# 3. GLEW (Using a CMake-friendly mirror)
+# 3. GLEW (Using the corrected CMake-friendly mirror so it doesn't prompt for password)
 FetchContent_Declare(glew
-    GIT_REPOSITORY https://github.com/Perlmutter/glew.git
-    GIT_TAG        glew-2.2.0
+    GIT_REPOSITORY https://github.com/Perlmint/glew-cmake.git
+    GIT_TAG        glew-cmake-2.2.0
 )
 FetchContent_MakeAvailable(glew)
 
@@ -49,7 +49,7 @@ FetchContent_Declare(imgui
 )
 FetchContent_Populate(imgui)
 
-# Create ImGui as a static library (matching your local MSBuild setup)
+# Create ImGui as a static library
 add_library(imgui_lib STATIC
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
@@ -65,7 +65,7 @@ target_include_directories(imgui_lib PUBLIC
 target_link_libraries(imgui_lib PUBLIC glfw OpenGL::GL)
 
 
-# 7. OpenPit3D Executable
+# 7. OpenPit3D Executable (all your 13 source files)
 set(SOURCES
     main.cpp
     BlockModel.cpp
@@ -93,12 +93,13 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     OpenMP::OpenMP_CXX
 )
 
+# Add GLM and Eigen to the include path
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${glm_SOURCE_DIR}
     ${eigen_SOURCE_DIR}
 )
 
-# Apple specific OS frameworks if building on macOS
+# Apple specific OS frameworks if building on macOS in the future
 if(APPLE)
     target_link_libraries(${PROJECT_NAME} PRIVATE 
         "-framework OpenGL" 
