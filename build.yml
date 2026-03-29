@@ -1,4 +1,4 @@
-name: C++ CMake Build
+name: C++ CMake Build (Windows)
 
 on:
   push:
@@ -8,23 +8,24 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     # 1. Download the code into the runner
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # 2. Install required Linux display and graphics headers for GLFW/OpenGL
-    - name: Install Linux Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y xorg-dev libwayland-dev libxkbcommon-dev wayland-protocols libgl1-mesa-dev libglu1-mesa-dev
-
-    # 3. Configure the project using the CMakeLists.txt
+    # 2. Configure CMake for Visual Studio 2022 (64-bit)
     - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++
+      run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
 
-    # 4. Compile the code
+    # 3. Compile the code using MSBuild
     - name: Build
       run: cmake --build build --config Release --parallel
+
+    # 4. (Optional) Upload the compiled .exe so you can download and run it!
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: OpenPit3D-Windows
+        path: build/Release/OpenPit3D.exe # Adjust if your executable name is different
