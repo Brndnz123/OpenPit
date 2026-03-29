@@ -1,7 +1,1 @@
-// UI.cpp
-
-#include "UI.h"
-
-void UI::render(...) {
-    // ImGui interface implementation
-}
+// Updated content for UI.cpp
